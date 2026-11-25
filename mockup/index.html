@@ -35,7 +35,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
 .head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .head h3{margin:0}
-.fig{position:relative;min-height:360px;border-radius:12px;overflow:hidden;background:#0a0a0c}
+.fig{position:relative;min-height:300px;border-radius:12px;overflow:hidden;background:#0a0a0c}
 .fig canvas{position:absolute;inset:0;width:100%;height:100%}
 .fig .tag{position:absolute;left:14px;bottom:12px;font-size:13px;color:var(--dim)}
 .knobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
@@ -59,8 +59,18 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .row label{font-size:13px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row.layer label{color:var(--acc)}
 .row.muted{opacity:.4}
+.orbp{display:flex}
+.orbp .fig{flex:1}
+.harm{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-bottom:12px}
+.chords{display:flex;gap:6px}
+.chords span{font-family:Unbounded,system-ui,sans-serif;font-size:15px;padding:8px 12px;border-radius:10px;background:var(--panel2);min-width:52px;text-align:center}
+.chords span.cur{background:var(--ink);color:var(--bg)}
+.chords.next span{background:none;border:1px dashed var(--acc);color:var(--acc)}
+.tog{min-height:36px;font-size:13px}
+.tog.on{background:var(--ok);border-color:var(--ok)}
+.cue-lamp{display:inline-block;padding:2px 8px;border-radius:6px;background:var(--acc);color:#140a04;font-size:12px;font-weight:600;margin-right:6px}
 .cells{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:3px}
-.cells i{height:26px;border-radius:4px;background:var(--panel2);cursor:pointer}
+.cells i{height:34px;border-radius:4px;background:var(--panel2);cursor:pointer}
 .cells i:nth-child(4n+1){background:#2a2a32}
 .cells i.on{background:var(--ink)}
 .layer .cells i.on{background:var(--acc)}
@@ -102,7 +112,7 @@ th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);verti
 th{color:var(--dim);font-weight:500}
 ol.phases{padding-left:20px;max-width:80ch}
 ol.phases li{margin-bottom:8px}
-@media(max-width:600px){.row{grid-template-columns:58px minmax(0,1fr)}.cells i{height:22px}.read .num{font-size:22px}.tl div{height:26px}table{font-size:13px}th,td{padding:6px 4px}}
+@media(max-width:600px){.row{grid-template-columns:58px minmax(0,1fr)}.cells i{height:24px}.chords span{min-width:40px;padding:6px 8px;font-size:13px}.read .num{font-size:22px}.tl div{height:26px}table{font-size:13px}th,td{padding:6px 4px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -114,15 +124,18 @@ ol.phases li{margin-bottom:8px}
     <div class="read"><small>Bar . beat</small><span class="num" id="pos">1.1</span></div>
     <div class="read"><small>Section</small><span class="num" id="sec">Intro</span></div>
     <div class="grow"></div>
-    <div class="read"><small id="snd" style="font-size:13px">Sound off: press play</small><span class="note">On iPhone or iPad, flip the silent switch off and turn the volume up. AI answers are simulated.</span></div>
+    <button class="tog on" id="safe" title="Chords, melodies and effects snap to what sounds good">Always sounds good</button>
+    <button class="tog on" id="autot" title="Riser and fill are built before every change">Auto transitions</button>
+    <div class="read"><small id="snd" style="font-size:13px">Sound off: press play</small><span class="note">AI answers are simulated in this mockup.</span></div>
   </div>
 
   <div class="grid">
     <div class="panel">
-      <div class="fig" id="fig"><canvas id="cv"></canvas><span class="tag" id="tag">Press play. The orb listens to the mix.</span></div>
+      <div class="head"><h3>Pattern: 16 steps</h3><span class="note">Tap cells. Orange rows are invented layers; melodies snap to the chords and evolve every 8 bars.</span></div>
+      <div class="seq" id="seq"></div>
     </div>
     <div class="panel">
-      <div class="head"><h3>Knob deck</h3><span class="note">Words become knobs. Invent more on the right.</span></div>
+      <div class="head"><h3>Knob deck</h3><span class="note">Moves glide on the beat. Sad · Happy changes chords at the next 8.</span></div>
       <div class="knobs" id="knobs"></div>
     </div>
 
@@ -131,21 +144,21 @@ ol.phases li{margin-bottom:8px}
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="note">Invented buttons fire</span>
           <div class="seg" id="qmode"><button data-q="now">Now</button><button data-q="bar">Next bar</button><button data-q="phrase" class="on">Next 8</button></div></div>
       </div>
+      <div class="harm" id="harm"></div>
       <div class="tl" id="tl"></div>
       <div class="tlab"><span>Intro 1–8</span><span>Build 9–16</span><span>Drop 17–24</span><span>Break 25–32</span></div>
       <div class="cues" id="cues"></div>
-    </div>
-
-    <div class="panel">
-      <div class="head"><h3>Pattern: 16 steps</h3><span class="note">Tap cells. Orange rows are invented layers.</span></div>
-      <div class="seq" id="seq"></div>
     </div>
 
     <div class="panel inv">
       <div class="head"><h3>Invent a control</h3><button id="sugg" style="min-height:32px;padding:4px 10px;font-size:13px">Suggest words</button></div>
       <form class="irow" id="iform"><input id="word" value="earworm" autocomplete="off" aria-label="New word"><button type="submit">Generate</button></form>
       <div class="chips" id="chips"></div>
+      <p class="note" style="margin:0 0 8px">Claude decides whether each idea is a knob or a button. Previews play in your headphones only.</p>
       <div class="opts" id="opts"></div>
+    </div>
+    <div class="panel orbp">
+      <div class="fig" id="fig"><canvas id="cv"></canvas><span class="tag" id="tag">Press play. The orb listens to the mix.</span></div>
     </div>
 
     <div class="panel full">
@@ -153,7 +166,7 @@ ol.phases li{margin-bottom:8px}
         <div><div class="head"><h3>Invented buttons</h3><span class="note">Press to bring in or out on the cue</span></div><div class="btns" id="ibtns"></div></div>
         <div><div class="head"><h3>Looper</h3><span class="note">Hold to roll</span></div>
           <div class="btns"><button data-roll="4">1/4</button><button data-roll="2">1/8</button><button data-roll="1">1/16</button><button id="fill">Random fill</button></div></div>
-        <div><div class="head"><h3>Sampler</h3><span class="note">Tap to fire</span></div>
+        <div><div class="head"><h3>Sampler</h3><span class="note">Snaps to the beat; the riser lands on the next 8</span></div>
           <div class="btns"><button data-pad="riser">Riser</button><button data-pad="impact">Impact</button><button data-pad="laser">Laser</button><button data-pad="siren">Siren</button></div></div>
       </div>
     </div>
@@ -198,7 +211,19 @@ ol.phases li{margin-bottom:8px}
     </div>
 
     <div>
-      <h3>Feedback for round 1</h3>
+      <h3>Round 2: what changed</h3>
+      <ul class="phases" style="padding-left:20px;max-width:80ch">
+        <li><b>Pattern grid leads</b> the screen; the orb moved down beside Invent.</li>
+        <li><b>Always sounds good</b> (on by default): chords come from four proven progressions, and Sad · Happy only switches them at the next 8. Melodies are written relative to the current chord and snap to chord tones on the beat, so every note fits.</li>
+        <li><b>Melodies evolve</b> every 8 bars through four variations of the same hook, so they change without going wrong.</li>
+        <li><b>Knobs glide</b> on the beat instead of jumping; Speed eases over a couple of bars.</li>
+        <li><b>Auto transitions:</b> when chords or a cued layer are about to change, a riser starts two bars early, a fill plays in the last bar, and a crash lands on the new phrase.</li>
+        <li><b>Sampler snaps:</b> hits wait for the beat, Impact for the bar, and the Riser is timed to land on the next 8.</li>
+        <li><b>Headphone previews</b> are marked CUE; Claude picks knob or button; Next 8 stays the default; the set opens with a few example controls to play with.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Feedback for round 1 (answered)</h3>
       <ol class="phases">
         <li>Is the orb the right hero, or should the pattern and timeline take more of the screen?</li>
         <li>Should invented controls choose their own type (knob or button), or should you decide first?</li>
@@ -221,16 +246,18 @@ const knobs=[
  {id:'space',label:'Spacy',lo:'dry',hi:'space',v:.3,c:'#8fb7ff',w:{space:1}},
  {id:'energy',label:'Energy',lo:'chill',hi:'hype',v:.4,c:'#ff5a8a',w:{energy:1}},
  {id:'heat',label:'Cold · Hot',lo:'cold',hi:'hot',v:.45,c:'#ff9a5a',w:{heat:1}},
- {id:'fizz',label:'Fizz',lo:'flat',hi:'fizz',v:.3,c:'#7ff0d0',w:{fizz:1},inv:1}
+ {id:'fizz',label:'Fizz',lo:'flat',hi:'fizz',v:.3,c:'#7ff0d0',w:{fizz:1},inv:1},
+ {id:'wawa',label:'Wawa',lo:'off',hi:'wah',v:0,c:'#c9a6ff',w:{wah:1},inv:1}
 ];
 const defaults={};knobs.forEach(k=>defaults[k.id]=k.v);
-const E=p=>{let s=0;knobs.forEach(k=>{if(k.w[p])s+=k.v*k.w[p]});return clamp(s)};
+const E=(p,raw)=>{let s=0;knobs.forEach(k=>{if(k.w[p])s+=(raw||k.s==null?k.v:k.s)*k.w[p]});return clamp(s)};
+let safe=true,autoT=true;
 const arc=(r,a0,a1)=>{const P=a=>[32+r*Math.sin(a),32-r*Math.cos(a)];const[x0,y0]=P(a0),[x1,y1]=P(a1);return `M${x0.toFixed(1)} ${y0.toFixed(1)}A${r} ${r} 0 ${a1-a0>Math.PI?1:0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`};
 const A0=-2.356,A1=2.356;
 function knobSvg(k){const a=A0+(A1-A0)*k.v,px=32+20*Math.sin(a),py=32-20*Math.cos(a);
  return `<svg viewBox="0 0 64 64"><path d="${arc(26,A0,A1)}" stroke="#34343d" stroke-width="5" fill="none" stroke-linecap="round"/><path d="${arc(26,A0,Math.max(A0+.01,a))}" stroke="${k.c}" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="32" cy="32" r="19" fill="#2c2c34"/><circle cx="32" cy="32" r="19" fill="none" stroke="#3d3d47"/><line x1="32" y1="32" x2="${px.toFixed(1)}" y2="${py.toFixed(1)}" stroke="${k.c}" stroke-width="3" stroke-linecap="round"/></svg>`}
 function renderKnobs(){$('#knobs').innerHTML=knobs.map((k,i)=>`<div class="knob${k.inv?' inv':''}" data-i="${i}" tabindex="0" role="slider" aria-label="${k.label}" aria-valuenow="${Math.round(k.v*100)}">${knobSvg(k)}<b>${k.label}</b><div class="lr"><span>${k.lo}</span><span>${k.fmt?k.fmt(k.v):Math.round(k.v*100)}</span><span>${k.hi}</span></div></div>`).join('')}
-function setKnob(i,v){const k=knobs[i];k.v=clamp(v);const el=$(`.knob[data-i="${i}"]`);if(!el)return;el.querySelector('svg').outerHTML=knobSvg(k);el.querySelector('.lr span:nth-child(2)').textContent=k.fmt?k.fmt(k.v):Math.round(k.v*100);el.setAttribute('aria-valuenow',Math.round(k.v*100));onParams()}
+function setKnob(i,v){const k=knobs[i];k.v=clamp(v);if(!playing)k.s=k.v;dirty=true;const el=$(`.knob[data-i="${i}"]`);if(!el)return;el.querySelector('svg').outerHTML=knobSvg(k);el.querySelector('.lr span:nth-child(2)').textContent=k.fmt?k.fmt(k.v):Math.round(k.v*100);el.setAttribute('aria-valuenow',Math.round(k.v*100));onParams()}
 let drag=null;
 $('#knobs').addEventListener('pointerdown',e=>{const el=e.target.closest('.knob');if(!el)return;drag={i:+el.dataset.i,y:e.clientY,v:knobs[+el.dataset.i].v};el.setPointerCapture(e.pointerId)});
 $('#knobs').addEventListener('pointermove',e=>{if(!drag)return;setKnob(drag.i,drag.v+(drag.y-e.clientY)/180)});
@@ -247,14 +274,24 @@ const tracks=[
  {id:'ohat',name:'Open hat',on:P('......x.......x.')},
  {id:'bass',name:'Bass',on:P('.xxx.xxx.xxx.xx.')}
 ];
-function renderSeq(){$('#seq').innerHTML=tracks.map((t,r)=>`<div class="row${t.layer?' layer':''}${t.mute?' muted':''}"><label title="${t.name}">${t.name}</label><div class="cells">${t.on.map((o,i)=>`<i data-r="${r}" data-s="${i}" class="${o?'on':''}"></i>`).join('')}</div></div>`).join('')}
+function renderSeq(){$('#seq').innerHTML=tracks.map((t,r)=>`<div class="row${t.layer?' layer':''}${t.mute?' muted':''}"><label title="${t.name}${t.gen?' · '+VARY[t.gen]:''}">${t.cue?'CUE · ':''}${t.name}${t.gen?' v'+(t.gen+1):''}</label><div class="cells">${t.on.map((o,i)=>`<i data-r="${r}" data-s="${i}" class="${o?'on':''}"></i>`).join('')}</div></div>`).join('')}
 $('#seq').addEventListener('click',e=>{const c=e.target.closest('i');if(!c)return;const t=tracks[+c.dataset.r],s=+c.dataset.s;t.on[s]=!t.on[s];if(t.pat&&t.on[s]&&t.pat[s]==null)t.pat[s]=0;c.classList.toggle('on',t.on[s])});
 
 // ---------- audio ----------
 let ac,bus,shaper,mf,comp,send,ret,dly,fb,an,noise,playing=false,step=0,nextT=0,timer,lastDirt=-1;
 const MAJ=[0,2,4,5,7,9,11],MIN=[0,2,3,5,7,8,10];
-const semi=d=>{const sc=E('mood')>.5?MAJ:MIN,o=Math.floor(d/7);return sc[((d%7)+7)%7]+12*o};
-const prog=()=>E('mood')>.5?[0,4,5,3]:[0,5,3,4];
+const PROGS=[{sc:'min',p:[0,5,3,4],n:'i – VI – iv – v'},{sc:'min',p:[0,5,2,6],n:'i – VI – III – VII'},{sc:'maj',p:[0,4,5,3],n:'I – V – vi – IV'},{sc:'maj',p:[0,3,4,3],n:'I – IV – V – IV'}];
+const target=()=>{const m=E('mood',1);return PROGS[m<.25?0:m<.5?1:m<.75?2:3]};
+let harm=target();
+const semiIn=(sc,d)=>{const S=sc==='maj'?MAJ:MIN,o=Math.floor(d/7);return S[((d%7)+7)%7]+12*o};
+const semi=d=>semiIn(harm.sc,d);
+const prog=()=>harm.p;
+const NN=['A','A♯','B','C','C♯','D','D♯','E','F','F♯','G','G♯'];
+const cname=(sc,d)=>{const r=semiIn(sc,d),t=semiIn(sc,d+2)-r,f=semiIn(sc,d+4)-r;return NN[r%12]+(f===6?'°':t===3?'m':'')};
+const snap=d=>{const m=((d%7)+7)%7;return m===1||m===3||m===5?d-1:m===6?d+1:d};
+const VARY=['','second half up a third','answer phrase','mirrored tail'];
+const vary=(b,g)=>b.map((d,i)=>d==null?null:g===1&&i>=8?d+2:g===2&&i>=12?(b[i-12]??d)+4:g===3&&i>=8?(b[23-i]??d):d);
+let padQ=[],seqDirty=false,cueOn=false,cueIn;
 const mtof=m=>440*2**((m-69)/12), ROOT=45;
 function initAudio(){
  ac=new (window.AudioContext||window.webkitAudioContext)();
@@ -265,17 +302,18 @@ function initAudio(){
  for(let c=0;c<2;c++){const d=ib.getChannelData(c);for(let i=0;i<L;i++)d[i]=(Math.random()*2-1)*(1-i/L)**3}
  conv.buffer=ib;ret=ac.createGain();send.connect(conv);conv.connect(ret);
  dly=ac.createDelay(2);fb=ac.createGain();fb.gain.value=.42;send.connect(dly);dly.connect(fb);fb.connect(dly);dly.connect(ret);ret.connect(mf);
+ cueIn=ac.createGain();cueIn.gain.value=.45;const cf=ac.createBiquadFilter();cf.type='highpass';cf.frequency.value=350;cueIn.connect(cf);cf.connect(bus);
  noise=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const nd=noise.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
  onParams();
 }
 function onParams(){
- $('#bpm').textContent=Math.round(bpm());
+ $('#bpm').textContent=Math.round(110+E('tempo',1)*40);
  if(!ac)return;const d=E('dirt');
  if(Math.abs(d-lastDirt)>.015){lastDirt=d;const k=d*60,n=1024,c=new Float32Array(n);for(let i=0;i<n;i++){const x=i*2/n-1;c[i]=(1+k)*x/(1+k*Math.abs(x))}shaper.curve=c}
  ret.gain.setTargetAtTime(E('space')*.9,ac.currentTime,.05);dly.delayTime.setTargetAtTime(60/bpm()*.75,ac.currentTime,.1);
 }
 const bpm=()=>110+E('tempo')*40;
-function out(node,s){node.connect(bus);if(s){const g=ac.createGain();g.gain.value=s;node.connect(g);g.connect(send)}}
+function out(node,s){node.connect(cueOn?cueIn:bus);if(s&&!cueOn){const g=ac.createGain();g.gain.value=s;node.connect(g);g.connect(send)}}
 function env(t,peak,dec,att=.002){const g=ac.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+att);g.gain.exponentialRampToValueAtTime(.0001,t+att+dec);return g}
 function osc(type,f,t,dur){const o=ac.createOscillator();o.type=type;o.frequency.setValueAtTime(f,t);o.start(t);o.stop(t+dur+.05);return o}
 function nz(t,dur){const s=ac.createBufferSource();s.buffer=noise;s.start(t,Math.random()*.5);s.stop(t+dur+.05);return s}
@@ -287,7 +325,7 @@ const V={
   let c=140+E('heat')**2*2400;const w=E('wah');if(w)c*=1+w*4*(.5+.5*Math.sin(s/16*Math.PI*4));
   f.frequency.setValueAtTime(c*2.2,t);f.frequency.exponentialRampToValueAtTime(Math.max(60,c),t+.12);const e=env(t,.42,.2);o.connect(f);f.connect(e);out(e,.05)},
  pluck(t,m){const o=osc('square',mtof(m),t,.3),f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=900+E('heat')*4000;const e=env(t,.11,.22);o.connect(f);f.connect(e);out(e,.55)},
- stab(t,m){[0,3,7].forEach(iv=>{const o=osc('sawtooth',mtof(m+iv+(E('mood')>.5&&iv===3?1:0)),t,.4),f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=1800;const e=env(t,.06,.3);o.connect(f);f.connect(e);out(e,.7)})},
+ stab(t,ms){ms.forEach(m=>{const o=osc('sawtooth',mtof(m),t,.4),f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=1800;const e=env(t,.06,.3);o.connect(f);f.connect(e);out(e,.7)})},
  arp(t,m){const o=osc('triangle',mtof(m),t,.25),e=env(t,.14,.16);o.connect(e);out(e,.8)},
  tick(t){const o=osc('sine',3200,t,.03),e=env(t,.12,.018);o.connect(e);out(e,.2)},
  rim(t){const o=osc('triangle',820,t,.05),e=env(t,.18,.035);o.connect(e);out(e,.3)},
@@ -296,16 +334,26 @@ const V={
  bubble(t,m){const o=osc('sine',mtof(m),t,.12);o.frequency.exponentialRampToValueAtTime(mtof(m+7),t+.08);const e=env(t,.08,.09);o.connect(e);out(e,.6)},
  pad(t,m,dur){[0,2,4,7].forEach(d=>{const o=osc('sawtooth',mtof(m+semi(d)),t,dur),f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=900;o.detune.value=(Math.random()-.5)*14;
   const g=ac.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime((E('space')-.3)*.06,t+dur*.4);g.gain.linearRampToValueAtTime(0,t+dur);o.connect(f);f.connect(g);out(g,1)})},
- riser(t){const d=60/bpm()*8,n=nz(t,d),f=ac.createBiquadFilter();f.type='bandpass';f.Q.value=3;f.frequency.setValueAtTime(300,t);f.frequency.exponentialRampToValueAtTime(9000,t+d);
+ riser(t,bars=2){const d=60/bpm()*4*bars,n=nz(t,d),f=ac.createBiquadFilter();f.type='bandpass';f.Q.value=3;f.frequency.setValueAtTime(300,t);f.frequency.exponentialRampToValueAtTime(9000,t+d);
   const g=ac.createGain();g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.35,t+d);g.gain.linearRampToValueAtTime(0,t+d+.05);n.connect(f);f.connect(g);out(g,.5)},
  impact(t){V.kick(t,1.3);const n=nz(t,1),f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=600;const e=env(t,.5,.9);n.connect(f);f.connect(e);out(e,1)},
+ crash(t){const n=nz(t,1.6),f=ac.createBiquadFilter();f.type='highpass';f.frequency.value=5000;const e=env(t,.22,1.5);n.connect(f);f.connect(e);out(e,.8)},
  laser(t){const o=osc('square',2400,t,.4);o.frequency.exponentialRampToValueAtTime(80,t+.35);const e=env(t,.12,.35);o.connect(e);out(e,.6)},
  siren(t){const o=osc('sawtooth',600,t,1.6),l=osc('sine',3,t,1.6),lg=ac.createGain();lg.gain.value=300;l.connect(lg);lg.connect(o.frequency);const e=env(t,.08,1.5,.05);o.connect(e);out(e,.6)}
 };
-let roll=null,fill=null,cues=[],preview=null,dirty=true;
+let roll=null,fill=null,cues=[],preview=null,dirty=true,building=0,rP=-1;
 function playStep(s,t){
  const st=s%16,bar=Math.floor(s/16);
- if(st===0){cues.filter(c=>c.bar===bar).forEach(c=>c.go());cues=cues.filter(c=>c.bar!==bar);dirty=true}
+ knobs.forEach(k=>{k.s=k.s==null||!safe?k.v:k.s+(k.v-k.s)*(k.id==='tempo'?.05:.22)});onParams();
+ if(st===0){
+  const phrase=bar%8===0,tg=target(),change=tg!==harm;
+  if(change&&(!safe||phrase)){harm=tg;if(safe&&autoT&&bar>0)V.crash(t)}
+  if(phrase&&bar>0)tracks.forEach(tr=>{if(tr.base&&!tr.mute&&!tr.cue&&['pluck','arp','stab'].includes(tr.voice)){tr.gen=(tr.gen+1)%4;tr.pat=vary(tr.base,tr.gen);seqDirty=true}});
+  cues.filter(c=>c.bar===bar).forEach(c=>c.go());cues=cues.filter(c=>c.bar!==bar);dirty=true;
+  const pend=tg!==harm||cues.some(c=>c.bar===bar+(8-bar%8));
+  if(safe&&autoT&&pend){if(bar%8===6){V.riser(t,2);rP=bar+2}if(bar%8===7){fill={bar};if(rP!==bar+1&&!padQ.some(q=>q.riser))V.riser(t,1)}}
+  building=safe&&autoT&&pend&&bar%8>=6?bar+(8-bar%8):0}
+ padQ.filter(q=>q.s===s).forEach(q=>q.fn(t));padQ=padQ.filter(q=>q.s>s);
  if(preview&&s>=preview.until){preview.end();preview=null;dirty=true}
  const ps=roll?roll.anchor+((s-roll.start)%roll.len):s,pst=((ps%16)+16)%16;
  const chord=prog()[bar%4],fillOn=fill&&fill.bar===bar&&st>=8;
@@ -313,7 +361,8 @@ function playStep(s,t){
   if(fillOn&&(tr.id==='kick'||tr.id==='clap'))return;
   if(tr.id==='kick')V.kick(t);else if(tr.id==='clap')V.clap(t);else if(tr.id==='hat')V.hat(t,0);else if(tr.id==='ohat')V.hat(t,1,.14+E('energy')*.1);
   else if(tr.id==='bass')V.bass(t,ROOT+semi(chord)+(pst%8===7?12:0),s);
-  else{const deg=tr.pat?tr.pat[pst]??0:0,m=ROOT+24+semi(chord+deg);(V[tr.voice]||V.tick)(t,m)}});
+  else{let deg=tr.pat?tr.pat[pst]??0:0;if(safe&&pst%4===0)deg=snap(deg);cueOn=!!tr.cue;
+   if(tr.voice==='stab')V.stab(t,[0,2,4].map(k=>ROOT+24+semi(chord+deg+k)));else (V[tr.voice]||V.tick)(t,ROOT+24+semi(chord+deg));cueOn=false}});
  const en=E('energy');if(!tracks[2].on[pst]&&Math.random()<en*.5)V.hat(t,0,.08+en*.08);
  if(fillOn){V.clap(t,.2+(st-8)*.06);if(st%2)V.kick(t,.5);if(st===15)V.laser(t)}
  if(Math.random()<E('fizz')*.6)V.spark(t);
@@ -333,7 +382,7 @@ function unlock(){if(!ac)initAudio();
  return ac.resume().catch(()=>{})}
 function showSound(){const el=$('#snd');if(!el)return;const ok=ac&&ac.state==='running';el.textContent=ok?'Sound on':'Sound blocked: tap play again';el.style.color=ok?'var(--ok)':'var(--acc)'}
 async function start(){const p=unlock();if(playing)return;playing=true;await p;showSound();step=0;nextT=ac.currentTime+.08;timer=setInterval(sched,25);$('#play').classList.add('on');$('#play').textContent='■';$('#tag').textContent='Mood sets the colour, Spacy the haze, Dirty the grit.'}
-function stop(){playing=false;clearInterval(timer);roll=null;fill=null;$('#play').classList.remove('on');$('#play').textContent='▶';cur=-1;dirty=true}
+function stop(){playing=false;clearInterval(timer);roll=null;fill=null;padQ=[];building=0;$('#play').classList.remove('on');$('#play').textContent='▶';cur=-1;dirty=true}
 $('#play').onclick=()=>playing?stop():start();
 
 // ---------- performance ----------
@@ -341,15 +390,23 @@ document.querySelectorAll('[data-roll]').forEach(b=>{
  b.addEventListener('pointerdown',()=>{if(!playing)return;roll={len:+b.dataset.roll,anchor:step,start:step};b.classList.add('on')});
  const up=()=>{roll=null;b.classList.remove('on')};b.addEventListener('pointerup',up);b.addEventListener('pointerleave',up)});
 $('#fill').onclick=()=>{if(!playing)return;const bar=Math.floor(step/16);fill={bar:step%16<8?bar:bar+1}};
-document.querySelectorAll('[data-pad]').forEach(b=>b.onclick=async()=>{await unlock();showSound();V[b.dataset.pad](ac.currentTime+.01)});
+document.querySelectorAll('[data-pad]').forEach(b=>b.onclick=async()=>{await unlock();showSound();const k=b.dataset.pad;
+ if(!playing||!safe){V[k](ac.currentTime+.01);return}
+ const nb=Math.ceil(step/4)*4,nbar=Math.ceil(step/16)*16;
+ if(k==='riser'){let P=Math.ceil(step/128)*128;if(P-nbar<16)P+=128;const st0=Math.max(nbar,P-32);padQ.push({s:st0,riser:1,fn:t=>V.riser(t,(P-st0)/16)})}
+ else if(k==='impact')padQ.push({s:nbar,fn:t=>V.impact(t)});
+ else padQ.push({s:nb,fn:t=>V[k](t)});
+ b.classList.add('on');setTimeout(()=>b.classList.remove('on'),180)});
+$('#safe').onclick=e=>{safe=!safe;e.currentTarget.classList.toggle('on',safe);dirty=true};
+$('#autot').onclick=e=>{autoT=!autoT;e.currentTarget.classList.toggle('on',autoT)};
 let qmode='phrase';
 $('#qmode').onclick=e=>{const b=e.target.closest('button');if(!b)return;qmode=b.dataset.q;document.querySelectorAll('#qmode button').forEach(x=>x.classList.toggle('on',x===b))};
 function cueBar(){const bar=Math.floor(step/16);return qmode==='bar'?bar+1:(Math.floor(bar/8)+1)*8}
 const ibtns=[];
-function addLayer(name,L,temp){const tr={id:'L'+Math.random(),name,layer:1,voice:L.voice,pat:L.pat.slice(),on:L.pat.map(x=>x!=null),mute:!temp};tracks.push(tr);renderSeq();return tr}
+function addLayer(name,L,temp){const tr={id:'L'+Math.random(),name,layer:1,voice:L.voice,pat:L.pat.slice(),base:L.pat.slice(),gen:0,on:L.pat.map(x=>x!=null),mute:!temp,cue:!!temp};tracks.push(tr);renderSeq();return tr}
 function renderIb(){$('#ibtns').innerHTML=ibtns.length?ibtns.map((b,i)=>`<button class="ib${b.tr.mute?'':' live'}${b.wait?' wait':''}" data-b="${i}">${b.name}${b.wait?' · bar '+(b.wait+1):''}</button>`).join(''):'<span class="note">Add a button from an invented word.</span>'}
 $('#ibtns').onclick=e=>{const el=e.target.closest('[data-b]');if(!el)return;const b=ibtns[+el.dataset.b];
- const go=()=>{b.tr.mute=!b.tr.mute;b.wait=0;dirty=true};
+ const go=()=>{b.tr.mute=!b.tr.mute;b.wait=0;dirty=true;seqDirty=true};
  if(!playing||qmode==='now'){go();renderIb();return}
  if(b.wait){cues=cues.filter(c=>c.b!==b);b.wait=0;renderIb();dirty=true;return}
  const bar=cueBar();b.wait=bar;cues.push({bar,b,label:(b.tr.mute?'In: ':'Out: ')+b.name,go});renderIb();dirty=true};
@@ -392,7 +449,7 @@ function gen(word){const W=word[0].toUpperCase()+word.slice(1);let s=hash(word);
   {t:'knob',n:W+' texture',d:`A second reading: ${desc(w2).join(', ')}.`,ch:desc(w2),w:w2},
   {t:'button',n:W+' layer',d:`A new ${v} pattern that feels “${word}”.`,ch:['New '+v+' layer','Cue it on the phrase'],L:{voice:v,pat}}]}
 let opts=[];
-function renderOpts(word){$('#opts').innerHTML=opts.map((o,i)=>`<div class="opt" data-o="${i}"><div class="t"><b>${o.n}</b><em>${o.t==='knob'?'Knob':'Button'}</em></div><p>${o.d}</p><ul>${o.ch.map(c=>`<li>${c}</li>`).join('')}</ul><div class="b"><button data-a="prev">Preview 2 bars</button><button data-a="add">Add ${o.t}</button></div></div>`).join('')}
+function renderOpts(word){$('#opts').innerHTML=opts.map((o,i)=>`<div class="opt" data-o="${i}"><div class="t"><b>${o.n}</b><em>${o.t==='knob'?'Knob':'Button'}</em></div><p>${o.d}</p><ul>${o.ch.map(c=>`<li>${c}</li>`).join('')}</ul><div class="b"><button data-a="prev">Preview in headphones</button><button data-a="add">Add ${o.t}</button></div></div>`).join('')}
 function invent(word){word=word.trim().toLowerCase().replace(/[^a-z0-9 -]/g,'').slice(0,20);if(!word)return;$('#word').value=word;
  $('#opts').innerHTML=`<div class="thinking">Claude is listening to “${word}” and the current groove…</div>`;
  setTimeout(()=>{opts=R[word]||gen(word);opts.word=word;renderOpts()},650)}
@@ -423,8 +480,13 @@ function frame(){
  if(cur!==lastStep){lastStep=cur;dirty=true;if(cur>=0&&tracks[0].on[cur%16])pulse=1;
   document.querySelectorAll('.cells i.ph').forEach(x=>x.classList.remove('ph'));
   if(cur>=0){document.querySelectorAll(`.cells i[data-s="${cur%16}"]`).forEach(x=>x.classList.add('ph'));const bar=Math.floor(cur/16);$('#pos').textContent=(bar+1)+'.'+((cur%16>>2)+1);$('#sec').textContent=SEC[Math.floor(bar%32/8)]}}
- if(dirty){dirty=false;const bar=cur<0?-1:Math.floor(cur/16)%32;[...tl.children].forEach((d,i)=>{d.className=(i===bar?'now':(bar>=0&&i<bar)?'ph':'')+(cues.some(c=>c.bar%32===i)?' cue':'')});
-  $('#cues').innerHTML=cues.length?'Cued: '+cues.map(c=>`<span>${c.label}</span> at bar ${c.bar+1}`).join(' · '):(preview?'Previewing an option for 2 bars. In the app this plays in headphones only.':'No cues waiting.');renderIb()}
+ if(seqDirty){seqDirty=false;renderSeq()}
+ if(dirty){dirty=false;const tg=target(),cb=cur<0?0:Math.floor(cur/16)%4,nx=(Math.floor(Math.max(cur,0)/128)+1)*8+1;
+  $('#harm').innerHTML=`<span class="note">Key A ${harm.sc==='maj'?'major':'minor'} · ${harm.n}</span><div class="chords">${harm.p.map((d,i)=>`<span class="${cur>=0&&i===cb?'cur':''}">${cname(harm.sc,d)}</span>`).join('')}</div>`+
+   (tg!==harm?`<span class="note" style="color:var(--acc)">${safe?'At bar '+nx:'Now'} →</span><div class="chords next">${tg.p.map(d=>`<span>${cname(tg.sc,d)}</span>`).join('')}</div>`:'');const bar=cur<0?-1:Math.floor(cur/16)%32;[...tl.children].forEach((d,i)=>{d.className=(i===bar?'now':(bar>=0&&i<bar)?'ph':'')+(cues.some(c=>c.bar%32===i)?' cue':'')});
+  $('#cues').innerHTML=cues.length?'Cued: '+cues.map(c=>`<span>${c.label}</span> at bar ${c.bar+1}`).join(' · '):(preview?'':'No cues waiting.');
+  if(preview)$('#cues').innerHTML+=(cues.length?' · ':'')+'<span class="cue-lamp">CUE</span>Previewing in headphones for 2 bars (this mockup plays it quietly and thin instead).';
+  if(building)$('#cues').innerHTML+=` · <span>Building transition into bar ${building+1}</span>`;renderIb()}
  // orb
  const mood=E('mood'),sp=E('space'),dt=E('dirt'),en=E('energy'),hue=220-mood*180;
  cx.fillStyle='rgba(10,10,12,'+(0.5-sp*.38)+')';cx.fillRect(0,0,W,H);
@@ -437,7 +499,7 @@ function frame(){
  cx.restore();
  requestAnimationFrame(frame)}
 renderKnobs();renderSeq();
-ibtns.push({name:'Tiktak · ticks',tr:addLayer('Tiktak',R.tiktak[0].L,0)});renderIb();
+ibtns.push({name:'Tiktak · ticks',tr:addLayer('Tiktak',R.tiktak[0].L,0)},{name:'Earworm · hook',tr:addLayer('Earworm hook',R.earworm[0].L,0)});renderIb();
 opts=R.earworm;opts.word='earworm';renderOpts();
 $('#chips').innerHTML=['spacy','wawa','cold','angry','sunrise'].map(w=>`<button>${w}</button>`).join('');
 onParams();size();requestAnimationFrame(frame);
